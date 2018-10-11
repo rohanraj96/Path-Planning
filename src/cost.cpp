@@ -56,28 +56,11 @@ double inefficiency_cost(Vehicle & trajectory, map<int, vector<Vehicle>> & predi
 }
 
 double lane_speed(Vehicle &vehicle, map<int, vector<Vehicle>> & predictions, int lane) {
-    /*
-    All non ego vehicles in a lane have the same speed, so to get the speed limit for a lane,
-    we can just find one vehicle in that lane.
-    */
-    // for (map<int, vector<Vehicle>>::const_iterator it = predictions.begin(); it != predictions.end(); ++it) {
-    //     int key = it->first;
-    //     Vehicle vehicle = it->second[0];
-    //     if (vehicle.lane == lane) {
-    //         return vehicle.v;
-    //     }
-    // }
-
+   
     Vehicle front_vehicle ;
     bool found_vehicle = vehicle.get_vehicle_in_lane_ahead(predictions,lane,front_vehicle);
     if(found_vehicle)
     {
-        // cout<<"yes,found vehicle"<<endl;
-
-        // if(front_vehicle.s-vehicle.s>20)
-        // {
-        //     return -1;
-        // }
         if(front_vehicle.s > vehicle.s + vehicle.v)
         {
             return -1;
@@ -88,10 +71,6 @@ double lane_speed(Vehicle &vehicle, map<int, vector<Vehicle>> & predictions, int
     found_vehicle = vehicle.get_vehicle_in_lane_behind(predictions,lane,rear_vehicle);
     if(found_vehicle)
     {
-        // if(vehicle.s - rear_vehicle.s>20)
-        // {
-        //     return -1;
-        // }
         if(vehicle.s>rear_vehicle.s+rear_vehicle.v)
         {
             return -1;
@@ -112,7 +91,6 @@ double collision_distance(double present_car_s,Vehicle &trajectory, map<int, vec
     Vehicle rear_vehicle;
     Vehicle copy = trajectory;
     copy.s = present_car_s;
-    // cout<<"printing this"<<" "<<trajectory.s<<" "<<copy.s<<endl;
 
     bool found_vehicle_front = copy.get_vehicle_ahead(predictions,lane,front_vehicle);
     bool found_vehicle_back  = copy.get_vehicle_behind(predictions,lane,rear_vehicle);
@@ -151,17 +129,6 @@ double collision_cost(double present_car_s,Vehicle &trajectory,map<int, vector<V
 {
     double cost = collision_distance(present_car_s,trajectory,predictions,data["intended_lane"]);
     
-    // if(proposed_dist_intended == 0)
-    // {
-    //     proposed_dist_intended = 2*horizon;
-    // }
-    // double proposed_dist_final = collision_distance(trajectory,predictions,data["final_lane"]);
-    // if(proposed_dist_final ==0 )
-    // {
-    //     proposed_dist_final = horizon;
-    // }
-    // double dist_collision = (2*horizon - proposed_dist_intended)/(2*horizon);
-    
     return cost;
 }
 
@@ -171,39 +138,17 @@ double get_lane_cost(Vehicle &trajectory,map<string,float>&data)
     return abs(data["final_lane"] - data["intended_lane"]);
 }
 
-// double collision_cost_sideways(Vehicle & vehicle,double car_s,map<int, vector<Vehicle>> & predictions,int lane)
-// {
-
-// }
-
-// double max_s(Vehicle &trajectory,map<int, vector<Vehicle>> & predictions, map<string, float> & data)
-// {
-//     Vehicle front_vehicle;
-//     bool found_vehicle_front = trajectory.get_vehicle_ahead(predictions,lane,front_vehicle);
-//     double cost = collision_distance(trajectory,predictions,data["intended_lane"]);
-// }
-
-
 double calculate_cost( Vehicle & vehicle,  map<int, vector<Vehicle>> & predictions,  vector<Vehicle> & trajectory) {
     // cout<<"printing"<<" "<<vehicle.s<<endl;
     /*
     Sum weighted cost functions to get total cost for trajectory.
     */
-    // map<string, float> trajectory_data = get_helper_data(vehicle, trajectory, predictions);
-    // float cost = 0.0;
-    // std::vector<double> speed_cost;
-    // std::vector<double> collision_cost;
-    // std::std::vector<double> lane_cost;
-
-    // double best_cost = 100000;
-    // int best_cost_index =0;
     double cost = 0;
 
     for(int i=0;i<trajectory.size();i++)
     {
         map<string,float>trajectory_data = get_helper_data(vehicle,trajectory[i],predictions);
-        // cout<<trajectory[i].state<<" "<<trajectory_data["final_lane"]<<" "<<trajectory_data["intended_lane"]<<endl;
-        // double cost = 0;
+        
         cost+=500*inefficiency_cost(trajectory[i],predictions,trajectory_data);
         // cost+=10000*(1-collision_cost(trajectory[i],predictions,trajectory_data)/1000);
         cost+=100*get_lane_cost(trajectory[i],trajectory_data);
@@ -214,7 +159,7 @@ double calculate_cost( Vehicle & vehicle,  map<int, vector<Vehicle>> & predictio
                 cost+=700*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
             }
             else{
-                cost+=1500*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
+                cost+=1300*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
                 // cost+=600 * collision_cost_sideways(trajectory[i],car_s,predictions,trajectory_data["intended_lane"]);
                 // cost+=100*max_s(trajectory[i],predictions,trajectory_data);
             }

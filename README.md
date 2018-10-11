@@ -66,11 +66,11 @@ The car moves on the trajectory that is supplied every cycle to the simulator.Th
 
 The states are "KL"(keep lane) , "PLCL"(prepare lane change left),"PLCR"(prepare lane change right),"LCL"(lane change left) and "LCR"(lane change right).Every cycle,the state where the car can go are decided according to the strict rules.Please follow lines 92-115 in vehicle.cpp.After all the possible future states are in place ,the kinematics for every state is computed.The kinematics involves Newton's laws of motion to predict future state.Every state consists of vehicle information at a future point which are depicted downwards.
 
-# State - (velocity,position,acceleration,lane,state string).
+### State - (velocity,position,acceleration,lane,state string).
 
 The kinematics returns the future state information to the cost function which in turns returns the best possible trajectory for the car to move on.
 
-# Kinematics
+## Kinematics
 
 	```
 	if (get_vehicle_ahead(predictions, lane, vehicle_ahead)) {
@@ -153,7 +153,7 @@ double get_lane_cost(Vehicle &trajectory,map<string,float>&data)
 }
 ```
 
-##Trajectory Generation
+## Trajectory Generation
 
 I have used cubic spline library to generate a three degree smooth curve between the predicted future state and the previous path's end point.I also add some points ahead in future in the same lane so that the coordinate space is not sparse.
 
@@ -179,7 +179,7 @@ After the curve is generated ,I shift all the points in the trajectory from the 
    	}
   ```
 
-#Latency
+## Latency
 
 The code predicts the kinematics of the car for further 1 sec.The car tries to cover every waypoint every 0.02 seconds ,hence my trajectory consist of 50 points.Also,I assume that while the code runs and feed this information to the car again,the car must have covered some more waypoints.However ,the simulator takes care of this itself and before feeding it to the car.
 

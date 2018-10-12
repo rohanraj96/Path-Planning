@@ -23,7 +23,7 @@ public:
   int L = 1;
 
 
-  int preferred_buffer = 8; // impacts "keep lane" behavior.
+  int preferred_buffer = 6; // impacts "keep lane" behavior.
 
   int lane;
 

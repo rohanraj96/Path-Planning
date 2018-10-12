@@ -149,17 +149,18 @@ double calculate_cost( Vehicle & vehicle,  map<int, vector<Vehicle>> & predictio
     {
         map<string,float>trajectory_data = get_helper_data(vehicle,trajectory[i],predictions);
         
-        cost+=500*inefficiency_cost(trajectory[i],predictions,trajectory_data);
+        cost+=600*inefficiency_cost(trajectory[i],predictions,trajectory_data);
         // cost+=10000*(1-collision_cost(trajectory[i],predictions,trajectory_data)/1000);
-        cost+=100*get_lane_cost(trajectory[i],trajectory_data);
+        cost+=10*get_lane_cost(trajectory[i],trajectory_data);
         if(trajectory[i].state == "PLCL" || trajectory[i].state =="PLCR" || trajectory[i].state=="KL")
         {
             if(trajectory[i].state =="KL")
             {
-                cost+=700*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
+                cost+=exp(10*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data));
+                // cost+=700*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
             }
             else{
-                cost+=1300*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
+                cost+=exp(15*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data));
                 // cost+=600 * collision_cost_sideways(trajectory[i],car_s,predictions,trajectory_data["intended_lane"]);
                 // cost+=100*max_s(trajectory[i],predictions,trajectory_data);
             }

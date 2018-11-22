@@ -49,7 +49,7 @@ public:
   * Constructor
   */
   Vehicle();
-  Vehicle(double v,double s, double a,int lane , string state="KL");
+  Vehicle(double v, double s, double a, int lane , string state = "KL");
 
   /**
   * Destructor
@@ -77,8 +77,6 @@ public:
   float position_at(int t);
 
   bool get_vehicle_behind(map<int, vector<Vehicle>> predictions, int lane, Vehicle & rVehicle);
-  bool get_vehicle_in_lane_ahead(map<int, vector<Vehicle>> predictions, int lane, Vehicle & rVehicle);
-  bool get_vehicle_in_lane_behind(map<int, vector<Vehicle>> predictions, int lane, Vehicle & rVehicle);
   bool get_vehicle_ahead(map<int, vector<Vehicle>> predictions, int lane, Vehicle & rVehicle);
 
   vector<Vehicle> generate_predictions(std::vector<std::vector<double>> sensor_fusion,int prev_size,double end_path_s,int horizon=2);

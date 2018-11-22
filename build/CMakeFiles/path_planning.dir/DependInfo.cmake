@@ -4,16 +4,14 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/samkitjain/Desktop/Path-Planning/src/cost.cpp" "/Users/samkitjain/Desktop/Path-Planning/build/CMakeFiles/path_planning.dir/src/cost.cpp.o"
-  "/Users/samkitjain/Desktop/Path-Planning/src/main.cpp" "/Users/samkitjain/Desktop/Path-Planning/build/CMakeFiles/path_planning.dir/src/main.cpp.o"
-  "/Users/samkitjain/Desktop/Path-Planning/src/vehicle.cpp" "/Users/samkitjain/Desktop/Path-Planning/build/CMakeFiles/path_planning.dir/src/vehicle.cpp.o"
+  "/home/rohan/Desktop/SDC/TERM3/Path-Planning/src/cost.cpp" "/home/rohan/Desktop/SDC/TERM3/Path-Planning/build/CMakeFiles/path_planning.dir/src/cost.cpp.o"
+  "/home/rohan/Desktop/SDC/TERM3/Path-Planning/src/main.cpp" "/home/rohan/Desktop/SDC/TERM3/Path-Planning/build/CMakeFiles/path_planning.dir/src/main.cpp.o"
+  "/home/rohan/Desktop/SDC/TERM3/Path-Planning/src/vehicle.cpp" "/home/rohan/Desktop/SDC/TERM3/Path-Planning/build/CMakeFiles/path_planning.dir/src/vehicle.cpp.o"
   )
-set(CMAKE_CXX_COMPILER_ID "Clang")
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "/usr/local/include"
-  "/usr/local/opt/openssl/include"
   )
 
 # Targets to which this target links.

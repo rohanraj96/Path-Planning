@@ -60,159 +60,101 @@ Here is the data provided from the Simulator to the C++ Program
 
 2. There will be some latency between the simulator running and the path planner returning a path, with optimized code usually its not very long maybe just 1-3 time steps. During this delay the simulator will continue using points that it was last given, because of this its a good idea to store the last points you have used so you can have a smooth transition. previous_path_x, and previous_path_y can be helpful for this transition since they show the last points given to the simulator controller with the processed points already removed. You would either return a path that extends this previous path or make sure to create a new path that has a smooth transition with this last path.
 
-## Kinematics and Cost
+## States
 
-The car moves on the trajectory that is supplied every cycle to the simulator.The car then follows this trajectory.To minimize the jerk , the trajectory is generated in a manner that the acceleration in both lateral and longitudinal direction is below the threshold limit.The trajectory is generated looking at different parameters such as position of other cars and speed of different lanes.At every cycle,I predict next point of the car after 1 second.The kinematic equations help to map next point on the map.I will call this "next point" a state.At every instant ,I choose next states where there is a possibility of the car to go keeping the restrictions in mind ,such as the car already on the leftmost lane cannot go any further left.
-
-The states are "KL"(keep lane) , "PLCL"(prepare lane change left),"PLCR"(prepare lane change right),"LCL"(lane change left) and "LCR"(lane change right).Every cycle,the state where the car can go are decided according to the strict rules.Please follow lines 92-115 in vehicle.cpp.After all the possible future states are in place ,the kinematics for every state is computed.The kinematics involves Newton's laws of motion to predict future state.Every state consists of vehicle information at a future point which are depicted downwards.
-
-### State - (velocity,position,acceleration,lane,state string).
-
-The kinematics returns the future state information to the cost function which in turns returns the best possible trajectory for the car to move on.
+I have used a finite state machine with 5 states: "KL"(keep lane) , "PLCL"(prepare lane change left),"PLCR"(prepare lane change right),"LCL"(lane change left) and "LCR"(lane change right).
 
 ## Kinematics
 
 	```
-	if (get_vehicle_ahead(predictions, lane, vehicle_ahead)) {
+      if (get_vehicle_ahead(predictions, lane, vehicle_ahead)) {
 
-        if (get_vehicle_behind(predictions, lane, vehicle_behind)) {
-            new_velocity = vehicle_ahead.v; //must travel at the speed of traffic, regardless of preferred buffer
-        } else {
-        	double s = this->s + this->v;
-            double max_velocity_in_front = (vehicle_ahead.s - s - this->preferred_buffer) + vehicle_ahead.v - 0.5 * (this->a);
-            
-            new_velocity = min(min(max_velocity_in_front, max_velocity_accel_limit), this->target_speed);
+        if (get_vehicle_behind(predictions, lane, vehicle_behind))
+            new_velocity = vehicle_ahead.v;
+
+        else
+        {
+            double s = this->s + this->v;
+            double max_velocity_front = (vehicle_ahead.s - s - this->preferred_buffer) + vehicle_ahead.v - 0.5 * (this->a);
+            new_velocity = min(min(max_velocity_front, max_v_a_limit), this->target_speed);
         }
-    } else {
-        new_velocity = min(max_velocity_accel_limit, this->target_speed);
-    }
-    
-    new_accel = new_velocity - this->v; //Equation: (v_1 - v_0)/t = acceleration
-    new_accel = min(max(-10.0,new_accel),10.0);
-    new_position = this->s + new_velocity + new_accel / 2.0;
+
 	```
 
-The kinematic module first checks if any other vehicle is present in the front of the ego vehicle ,and tries to match its speed while maintaining a buffer distance of 8 metres in this case .If there is any vehcicle at the back ,then the vehicle mathces the speed of the vehicle at the back.If there is no vehicle in the front and at the back,then the ego vehicle tries to go at the max velocity keeping in mind the acceleration and velocity thresholds.
+In the get_kinematics function, I check if there is a vehicle in front and in the back of ego vehicle. In this case, I follow the lane traffic speed.
+However, if there is no vehicle behind me but one ahead of me, then I also reduce my distance from the vehicle in front to satisfy the buffer condition.
 
+Later, I take the jerk thresholds and speed limit into consideration to avoid red flags.
 The cost function module is used to rank the trajectories predicted for all the states according to predefined crieteria in increasing preferance order:
 
-1. Safety
+### Costs
 
-The ego vehicle should not collide with any car while maintaining lane or changing lanes.
-The penalty is high for collision while changing lanes to take into account the change in speeds of the cars in front or back.Also,the kinematics generated tries to maintain the buffer distance in the keep lane state.
-```
-	if(trajectory[i].state == "PLCL" || trajectory[i].state =="PLCR" || trajectory[i].state=="KL")
-	{
-	    if(trajectory[i].state =="KL")
-	    {
-	        cost+=700*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
-	    }
-	    else{
-	        cost+=1000*collision_cost(vehicle.s,trajectory[i],predictions,trajectory_data);
-	    }
-	}
+1. Crash cost
 
 ```
-
-2. Efficiency
-The car tries to choose the fastest lane possible from all the trajectories generated.The maximum velocity on which the car can run is 50MPH.
-
-```
-	double added_cost = 1;
-    double proposed_speed_intended = lane_speed(trajectory,predictions, data["intended_lane"]);
-    if (proposed_speed_intended < 0) {
-        if((trajectory.state == "PLCL" && trajectory.lane ==0 )|| (trajectory.state =="PLCR" && trajectory.lane ==2))
-        {
-            proposed_speed_intended = 0;
-            added_cost = 100;
-        }
-        else{
-            proposed_speed_intended = trajectory.target_speed;
-        }
-    }
-
-    double proposed_speed_final = lane_speed(trajectory,predictions, data["final_lane"]);
-    if (proposed_speed_final < 0) {
-
-        proposed_speed_final = trajectory.target_speed;
-    }
+    double cost = crash_distance(car_s, trajectory, predictions, data["intended_lane"]);
     
-    double cost = (2.0*trajectory.target_speed - proposed_speed_intended - proposed_speed_final)/trajectory.target_speed;
-    cost*=added_cost;
     return cost;
-```
-The added cost here depicts that the car cannot go any further left when it is in the leftmost lane and same for the rightmost lane as well.
-
-3. Change lane cost
-It is assumed that changing lanes should not be done while the current lane is as good as other lanes.Threfore there is an inherent low cost added while changing lanes too.
 
 ```
-double get_lane_cost(Vehicle &trajectory,map<string,float>&data)
-{
-    return abs(data["final_lane"] - data["intended_lane"]);
-}
+The crash cost function primarily uses the crash distance function to calculate the cost.
+It tries to capture the cost associated with a potential crash. More concretely:
+
 ```
+    if(!found_vehicle_front && !found_vehicle_back)
+        return 0;
+
+    else if(found_vehicle_front || found_vehicle_back)
+    {
+        if(found_vehicle_front && !found_vehicle_back)
+        {
+            delta += (vehicle_front.s - duplicate.s);
+            delta =  1 - delta/(horizon);
+            return delta;
+        }
+        else if(!found_vehicle_front && found_vehicle_back)
+        {
+            delta += (duplicate.s - vehicle_back.s);
+            delta = 1 - delta/(horizon);
+            return delta;
+        }
+        else if(found_vehicle_front && found_vehicle_back)
+        {
+            delta += (vehicle_front.s - vehicle_back.s);
+            delta = 1 - delta/(2 * horizon);
+            return delta;
+        }    
+    }
+    return delta;
+```
+Here, the cost is 0 when there is no vehicle in front or at the back of the ego vehicle.
+Alternatively, there's a cost associated whenever there's a vehicle in front or behind the ego vehicle in the same lane.
+
+2. Wrong Lane cost
+
+```
+    return abs(helper_data["final_lane"] - helper_data["intended_lane"]);
+```
+This cost just punishes the ego for not being in the desired lane. This value is later multiplied by a weight.
 
 ## Trajectory Generation
 
-I have used cubic spline library to generate a three degree smooth curve between the predicted future state and the previous path's end point.I also add some points ahead in future in the same lane so that the coordinate space is not sparse.
+I have used cubic spline library to generate trajectory as follows and then I transform all the coordinated from the world-coordinate system to the ego-coordinate system as follows:
 
 ```
-	vector<double> next_wp0 = getXY(ref_s_1+30,(2+lane_number*4),map_waypoints_s,map_waypoints_x,map_waypoints_y);
-    vector<double> next_wp1 = getXY(ref_s_2+60,(2+lane_number*4),map_waypoints_s,map_waypoints_x,map_waypoints_y);
-    vector<double> next_wp2 = getXY(ref_s_3+90,(2+lane_number*4),map_waypoints_s,map_waypoints_x,map_waypoints_y);
+            for (int i = 0; i < ptsx.size(); i++) {
+              double shift_x = ptsx[i] - ref_x;
+              double shift_y = ptsy[i] - ref_y;
 
-    tk::spline s;
+              ptsx[i] = (shift_x * cos(0-ref_yaw) - shift_y * sin(0-ref_yaw));
+              ptsy[i] = (shift_x * sin(0-ref_yaw) + shift_y * cos(0-ref_yaw));
+            }
 
-    s.set_points(pts_x,pts_y);
 ```
-
-After the curve is generated ,I shift all the points in the trajectory from the original coordinate space to the car coordinates and rotate it according to the yaw of the car.
-```
-	for (int i = 0; i < pts_x.size(); i++) {
-      // Shift car reference angle to 0 degrees
-      double shift_x = pts_x[i] - ref_x;
-      double shift_y = pts_y[i] - ref_y;
-
-      pts_x[i] = (shift_x * cos(0-ref_yaw) - shift_y * sin(0-ref_yaw));
-      pts_y[i] = (shift_x * sin(0-ref_yaw) + shift_y * cos(0-ref_yaw));
-   	}
-  ```
 
 ## Latency
 
-The code predicts the kinematics of the car for further 1 sec.The car tries to cover every waypoint every 0.02 seconds ,hence my trajectory consist of 50 points.Also,I assume that while the code runs and feed this information to the car again,the car must have covered some more waypoints.However ,the simulator takes care of this itself and before feeding it to the car.
-
-```
-for(int i=start;i<50;i++)
-{
-  // cout<<"inside"<<" "<<endl;
-  double x_value = next_x_vals[i-1];
-  double y_value = next_y_vals[i-1];
-  
-
-  double x_point = x_add_on + 0.02*ref_vel_list[i-1];
-  x_add_on = x_point;
-  double y_point = s(x_point);
-
-  double x_ref = x_point;
-  double y_ref = y_point;
-
-  // Rotate back to normal after rotating it earlier
-  x_point = (x_ref * cos(ref_yaw) - y_ref*sin(ref_yaw));
-  y_point = (x_ref * sin(ref_yaw) + y_ref*cos(ref_yaw));
-
-
-  x_point += ref_x;
-  y_point += ref_y;
-
-
-
-  next_x_vals.push_back(x_point);
-  next_y_vals.push_back(y_point);
-}
-```
-
+The simulator is intelligent enough to deal with latency issue and I did not feel the need to add source code to deal with any latency.
 
 ## Dependencies
 
